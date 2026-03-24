@@ -112,19 +112,35 @@ class BirthdayService(BaseService):
             if connection:
                 connection.close()
     
+    def _format_birthdate_spanish(self, birth_date) -> str:
+        """Formatea la fecha de cumpleaños en español."""
+        meses_es = {
+            1: 'enero', 2: 'febrero', 3: 'marzo', 4: 'abril',
+            5: 'mayo', 6: 'junio', 7: 'julio', 8: 'agosto',
+            9: 'septiembre', 10: 'octubre', 11: 'noviembre', 12: 'diciembre'
+        }
+        
+        if not birth_date:
+            return 'N/A'
+        
+        try:
+            if hasattr(birth_date, 'day'):
+                dia = birth_date.day
+                mes = meses_es.get(birth_date.month, 'N/A')
+                anio = birth_date.year
+                return f"{dia} de {mes} de {anio}"
+            else:
+                return str(birth_date)
+        except Exception as e:
+            self.logger.error(f"Error formateando fecha: {e}")
+            return 'N/A'
+    
     def _send_notification(self, customer: Dict[str, Any]) -> bool:
         """Envía notificación a la API."""
         try:
-            # Formatear fecha de cumpleaños
+            # Formatear fecha de cumpleaños en español
             birth_date = customer.get('BirthDate', '')
-            if birth_date:
-                # Mostrar en formato legible
-                if hasattr(birth_date, 'strftime'):
-                    formatted_date = birth_date.strftime('%d de %B de %Y')
-                else:
-                    formatted_date = str(birth_date)
-            else:
-                formatted_date = 'N/A'
+            formatted_date = self._format_birthdate_spanish(birth_date)
             
             message = f"""<b>🎂 ¡Cumpleaños!</b>
 
