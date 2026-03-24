@@ -23,14 +23,14 @@ down:
 	@echo "✅ Servicio detenido"
 
 logs:
-	docker-compose logs -f birthday-notifier
+	docker-compose logs -f push-notifier
 
 restart:
 	docker-compose restart birthday-notifier
 	@echo "✅ Servicio reiniciado"
 
 test:
-	docker-compose exec birthday-notifier python test_config.py
+	docker-compose exec push-notifier python test_config.py
 
 build:
 	docker-compose build
@@ -41,13 +41,13 @@ clean:
 	@echo "✅ Servicio eliminado"
 
 shell:
-	docker-compose exec birthday-notifier /bin/bash
+	docker-compose exec push-notifier /bin/bash
 
 ps:
 	docker-compose ps
 
 check-logs-last:
-	docker-compose logs --tail=50 birthday-notifier
+	docker-compose logs --tail=50 push-notifier
 
 env-setup:
 	@if [ ! -f .env ]; then \
