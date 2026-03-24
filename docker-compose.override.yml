@@ -1,14 +1,15 @@
 # docker-compose.override.yml
 # Archivo para desarrollo local - sobrescribe docker-compose.yml
+# Dejaras comentado mientras no lo necesites
 
 version: '3.8'
 
-services:
-  push-notifier:
-    # Para descomentar en desarrollo y editar código en vivo
-    # volumes:
-    #   - ./src:/app
-    
-    # Para debug interactivo
-    # entrypoint: tail -f /dev/null
-    # Luego: docker-compose exec push-notifier bash
+# services:
+#   push-notifier:
+#     # Para descomentar en desarrollo y editar código en vivo
+#     volumes:
+#       - ./src:/app
+#     
+#     # Para debug interactivo
+#     # entrypoint: tail -f /dev/null
+#     # Luego: docker-compose exec push-notifier bash
