@@ -135,24 +135,41 @@ class BirthdayService(BaseService):
             self.logger.error(f"Error formateando fecha: {e}")
             return 'N/A'
     
-    def _send_notification(self, customer: Dict[str, Any]) -> bool:
-        """Envía notificación a la API."""
+    def _send_notification(self, customers: List[Dict[str, Any]]) -> bool:
+        """Envía una notificación consolidada con todos los cumpleaños."""
         try:
-            # Formatear fecha de cumpleaños en español
-            birth_date = customer.get('BirthDate', '')
-            formatted_date = self._format_birthdate_spanish(birth_date)
+            if not customers:
+                return True
             
-            message = f"""<b>🎂 ¡Cumpleaños!</b>
+            # Construir tabla HTML
+            table_rows = ""
+            for customer in customers:
+                birth_date = customer.get('BirthDate', '')
+                formatted_date = self._format_birthdate_spanish(birth_date)
+                cobrador = customer.get('Cobrador', 'N/A')
+                
+                table_rows += f"""<tr>
+  <td>{customer['Code']}</td>
+  <td>{customer['Name']}</td>
+  <td>{formatted_date}</td>
+  <td>{customer['Mobile'] or 'N/A'}</td>
+  <td>{cobrador}</td>
+</tr>"""
+            
+            message = f"""<b>🎂 ¡CUMPLEAÑOS DEL DÍA!</b>
 
-<b>{customer['Name']}</b> está de cumpleaños hoy.
+<table border="1" cellpadding="10" style="border-collapse: collapse;">
+<tr style="background-color: #f0f0f0; font-weight: bold;">
+  <th>Código</th>
+  <th>Nombre</th>
+  <th>Fecha Cumpleaños</th>
+  <th>Celular</th>
+  <th>Cobrador</th>
+</tr>
+{table_rows}
+</table>
 
-<b>Detalles:</b>
-<code>Código:</code> {customer['Code']}
-<code>Fecha de Cumpleaños:</code> {formatted_date}
-<code>Teléfono:</code> {customer['Phone'] or 'N/A'}
-<code>Celular:</code> {customer['Mobile'] or 'N/A'}
-<code>Dirección:</code> {customer['Address'] or 'N/A'}
-{f"<code>Cobrador:</code> {customer['Cobrador']}" if customer['Cobrador'] else ""}"""
+<b>Total: {len(customers)} cumpleaños</b>"""
 
             payload = {
                 "bot_id": int(self.config['bot_id']),
@@ -168,7 +185,7 @@ class BirthdayService(BaseService):
             )
 
             if 200 <= response.status_code < 300:
-                self.logger.info(f"✅ Notificación enviada para {customer['Name']}")
+                self.logger.info(f"✅ Notificación enviada con {len(customers)} cumpleaños")
                 return True
             else:
                 self.logger.warning(f"⚠️  Error enviando notificación: {response.status_code}")
@@ -190,13 +207,10 @@ class BirthdayService(BaseService):
             
             self.logger.info(f"Se encontraron {len(customers)} cumpleaños")
             
-            success_count = 0
-            for customer in customers:
-                if self._send_notification(customer):
-                    success_count += 1
+            # Enviar una sola notificación consolidada con todos los cumpleaños
+            success = self._send_notification(customers)
             
-            self.logger.info(f"Notificaciones: {success_count}/{len(customers)} exitosas")
-            return success_count == len(customers)
+            return success
         
         except Exception as e:
             self.logger.error(f"Error general: {e}", exc_info=True)
