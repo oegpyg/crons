@@ -4,11 +4,11 @@
 version: '3.8'
 
 services:
-  birthday-notifier:
+  push-notifier:
     # Para descomentar en desarrollo y editar código en vivo
     # volumes:
     #   - ./src:/app
     
     # Para debug interactivo
     # entrypoint: tail -f /dev/null
-    # Luego: docker-compose exec birthday-notifier bash
+    # Luego: docker-compose exec push-notifier bash
