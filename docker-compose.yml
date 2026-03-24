@@ -6,16 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: birthday-notifier
-    environment:
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_NAME}
-      - NOTIFICATIONS_API_URL=${NOTIFICATIONS_API_URL}
-      - NOTIFICATIONS_BOT_ID=${NOTIFICATIONS_BOT_ID}
-      - NOTIFICATIONS_CHAT_ID=${NOTIFICATIONS_CHAT_ID}
-      - TZ=${TZ:-America/Mexico_City}
+    env_file: .env
     restart: always
     # Para acceder a la red del host (si la BD está en host.docker.internal)
     # network_mode: host
