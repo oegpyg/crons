@@ -139,7 +139,7 @@ class BirthdayService(BaseService):
                 timeout=10
             )
 
-            if response.status_code == 200:
+            if 200 <= response.status_code < 300:
                 self.logger.info(f"✅ Notificación enviada para {customer['Name']}")
                 return True
             else:
