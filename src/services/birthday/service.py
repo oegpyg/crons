@@ -115,12 +115,24 @@ class BirthdayService(BaseService):
     def _send_notification(self, customer: Dict[str, Any]) -> bool:
         """Envía notificación a la API."""
         try:
+            # Formatear fecha de cumpleaños
+            birth_date = customer.get('BirthDate', '')
+            if birth_date:
+                # Mostrar en formato legible
+                if hasattr(birth_date, 'strftime'):
+                    formatted_date = birth_date.strftime('%d de %B de %Y')
+                else:
+                    formatted_date = str(birth_date)
+            else:
+                formatted_date = 'N/A'
+            
             message = f"""<b>🎂 ¡Cumpleaños!</b>
 
 <b>{customer['Name']}</b> está de cumpleaños hoy.
 
 <b>Detalles:</b>
 <code>Código:</code> {customer['Code']}
+<code>Fecha de Cumpleaños:</code> {formatted_date}
 <code>Teléfono:</code> {customer['Phone'] or 'N/A'}
 <code>Celular:</code> {customer['Mobile'] or 'N/A'}
 <code>Dirección:</code> {customer['Address'] or 'N/A'}
