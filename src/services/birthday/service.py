@@ -1,0 +1,174 @@
+"""
+Servicio de notificaciones de cumpleaños.
+Hereda de BaseService para funcionar dentro del sistema modular.
+"""
+
+import logging
+import requests
+import pymysql
+from typing import Dict, Any, List, Optional
+from datetime import datetime
+
+from ..base_service import BaseService
+
+logger = logging.getLogger(__name__)
+
+
+class BirthdayService(BaseService):
+    """
+    Servicio que notifica cumpleaños de clientes.
+    
+    Configuración requerida en .env (ejemplo con prefijo BIRTHDAY_):
+        BIRTHDAY_ENABLED=true
+        BIRTHDAY_DB_HOST=mysql.example.com
+        BIRTHDAY_DB_PORT=3306
+        BIRTHDAY_DB_USER=user
+        BIRTHDAY_DB_PASSWORD=pass
+        BIRTHDAY_DB_NAME=netos_law
+        BIRTHDAY_NOTIFICATIONS_API_URL=http://api:8888
+        BIRTHDAY_BOT_ID=1
+        BIRTHDAY_CHAT_ID=123456789
+        BIRTHDAY_SCHEDULE_HOUR=6
+        BIRTHDAY_SCHEDULE_MINUTE=0
+    """
+    
+    name = 'birthday_notifier'
+    schedule = {
+        'hour': 6,
+        'minute': 0,
+        'timezone': 'America/Asuncion'
+    }
+    
+    def _validate_config(self):
+        """Valida que la configuración tenga los campos requeridos."""
+        required = [
+            'db_host', 'db_port', 'db_user', 'db_password', 'db_name',
+            'notifications_api_url', 'bot_id', 'chat_id'
+        ]
+        
+        missing = [key for key in required if key not in self.config]
+        if missing:
+            raise ValueError(f"Configuración incompleta para {self.name}. Faltan: {missing}")
+        
+        # Leer schedule del config si está disponible
+        if 'schedule_hour' in self.config:
+            try:
+                self.schedule['hour'] = int(self.config['schedule_hour'])
+            except ValueError:
+                pass
+        
+        if 'schedule_minute' in self.config:
+            try:
+                self.schedule['minute'] = int(self.config['schedule_minute'])
+            except ValueError:
+                pass
+    
+    def _get_db_connection(self) -> pymysql.Connection:
+        """Crea conexión a la BD MySQL."""
+        try:
+            connection = pymysql.connect(
+                host=self.config['db_host'],
+                port=int(self.config['db_port']),
+                user=self.config['db_user'],
+                password=self.config['db_password'],
+                database=self.config['db_name'],
+                charset='utf8mb4',
+                cursorclass=pymysql.cursors.DictCursor
+            )
+            return connection
+        except Exception as e:
+            self.logger.error(f"Error conectando a BD: {e}")
+            raise
+    
+    def _get_birthday_customers(self) -> List[Dict[str, Any]]:
+        """Obtiene clientes que cumplen años hoy."""
+        connection = None
+        try:
+            connection = self._get_db_connection()
+            with connection.cursor() as cursor:
+                query = """
+                    SELECT 
+                        a.Code, 
+                        a.Name, 
+                        day(a.BirthDate) as dia, 
+                        u.Name as Cobrador, 
+                        a.Address, 
+                        a.Phone, 
+                        a.Mobile, 
+                        a.BirthDate
+                    FROM netos_law.Customer a
+                    LEFT OUTER JOIN netos_law.User u ON u.Code=a.Collector
+                    WHERE date(a.BirthDate) = date(now()) 
+                        AND ifnull(a.Closed, 0) = 0 
+                    ORDER BY day(a.BirthDate)
+                """
+                cursor.execute(query)
+                return cursor.fetchall()
+        except Exception as e:
+            self.logger.error(f"Error ejecutando query: {e}")
+            return []
+        finally:
+            if connection:
+                connection.close()
+    
+    def _send_notification(self, customer: Dict[str, Any]) -> bool:
+        """Envía notificación a la API."""
+        try:
+            message = f"""<b>🎂 ¡Cumpleaños!</b>
+
+<b>{customer['Name']}</b> está de cumpleaños hoy.
+
+<b>Detalles:</b>
+<code>Código:</code> {customer['Code']}
+<code>Teléfono:</code> {customer['Phone'] or 'N/A'}
+<code>Celular:</code> {customer['Mobile'] or 'N/A'}
+<code>Dirección:</code> {customer['Address'] or 'N/A'}
+{f"<code>Cobrador:</code> {customer['Cobrador']}" if customer['Cobrador'] else ""}"""
+
+            payload = {
+                "bot_id": int(self.config['bot_id']),
+                "chat_id": self.config['chat_id'],
+                "message": message,
+                "parse_mode": "HTML"
+            }
+
+            response = requests.post(
+                f"{self.config['notifications_api_url']}/api/notifications/send",
+                json=payload,
+                timeout=10
+            )
+
+            if response.status_code == 200:
+                self.logger.info(f"✅ Notificación enviada para {customer['Name']}")
+                return True
+            else:
+                self.logger.warning(f"⚠️  Error enviando notificación: {response.status_code}")
+                return False
+        except Exception as e:
+            self.logger.error(f"❌ Error en notificación: {e}")
+            return False
+    
+    def execute(self) -> bool:
+        """Ejecuta la lógica del servicio de cumpleaños."""
+        try:
+            self.logger.info(f"Verificando cumpleaños...")
+            
+            customers = self._get_birthday_customers()
+            
+            if not customers:
+                self.logger.info("No hay cumpleaños hoy")
+                return True
+            
+            self.logger.info(f"Se encontraron {len(customers)} cumpleaños")
+            
+            success_count = 0
+            for customer in customers:
+                if self._send_notification(customer):
+                    success_count += 1
+            
+            self.logger.info(f"Notificaciones: {success_count}/{len(customers)} exitosas")
+            return success_count == len(customers)
+        
+        except Exception as e:
+            self.logger.error(f"Error general: {e}", exc_info=True)
+            return False
