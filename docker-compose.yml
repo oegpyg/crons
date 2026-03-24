@@ -1,15 +1,10 @@
 version: '3.8'
 
 services:
-  birthday-notifier:
+  push-notifier:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: birthday-notifier
+    container_name: push-notifier
     env_file: .env
     restart: always
-    # Para acceder a la red del host (si la BD está en host.docker.internal)
-    # network_mode: host
-    # O descomenta para usar bridge con la red del host
-    # networks:
-    #   - crons_network
