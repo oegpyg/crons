@@ -98,7 +98,8 @@ class BirthdayService(BaseService):
                         a.BirthDate
                     FROM netos_law.Customer a
                     LEFT OUTER JOIN netos_law.User u ON u.Code=a.Collector
-                    WHERE date(a.BirthDate) = date(now()) 
+                    WHERE month(a.BirthDate) = month(now()) 
+                        AND day(a.BirthDate) = day(now()) 
                         AND ifnull(a.Closed, 0) = 0 
                     ORDER BY day(a.BirthDate)
                 """
