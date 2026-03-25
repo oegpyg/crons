@@ -8,8 +8,12 @@ import requests
 import pymysql
 from typing import Dict, Any, List, Optional
 from datetime import datetime
+import os
+import tempfile
+import base64
 
 from ..base_service import BaseService
+from .image_generator import BirthdayImageGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -135,8 +139,72 @@ class BirthdayService(BaseService):
             self.logger.error(f"Error formateando fecha: {e}")
             return 'N/A'
     
+    def _generate_and_send_images(self, customers: List[Dict[str, Any]]) -> bool:
+        """Genera y envía imágenes de cumpleaños para cada cliente."""
+        try:
+            assets_dir = os.path.join(os.path.dirname(__file__), 'assets')
+            generator = BirthdayImageGenerator(assets_dir)
+            
+            images_sent = 0
+            
+            for customer in customers:
+                try:
+                    # Crear archivo temporal para la imagen
+                    with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp_file:
+                        tmp_path = tmp_file.name
+                    
+                    # Generar imagen
+                    if generator.generate_customer_image(customer, tmp_path):
+                        # Leer imagen y convertir a base64
+                        with open(tmp_path, 'rb') as img_file:
+                            image_data = img_file.read()
+                            image_base64 = base64.b64encode(image_data).decode('utf-8')
+                            image_url = f"data:image/jpeg;base64,{image_base64}"
+                        
+                        # Preparar payload con imagen y texto
+                        customer_name = customer.get('Name', 'Cliente')
+                        message = f"🎂 ¡Feliz cumpleaños {customer_name}!"
+                        
+                        payload = {
+                            "bot_id": int(self.config['bot_id']),
+                            "chat_id": self.config['chat_id'],
+                            "message": message,
+                            "image_url": image_url,
+                            "parse_mode": "HTML"
+                        }
+                        
+                        # Enviar imagen
+                        response = requests.post(
+                            f"{self.config['notifications_api_url']}/api/notifications/send",
+                            json=payload,
+                            timeout=30  # Aumentar timeout por tamaño de base64
+                        )
+                        
+                        if 200 <= response.status_code < 300:
+                            images_sent += 1
+                            self.logger.info(f"✅ Imagen enviada para {customer_name}")
+                        else:
+                            self.logger.warning(f"⚠️  Error enviando imagen de {customer_name}: {response.status_code}")
+                    
+                    # Limpiar archivo temporal
+                    if os.path.exists(tmp_path):
+                        os.remove(tmp_path)
+                        
+                except Exception as e:
+                    self.logger.error(f"Error procesando imagen de {customer.get('Name', 'Cliente')}: {e}")
+                    continue
+            
+            if images_sent > 0:
+                self.logger.info(f"✅ Se enviaron {images_sent}/{len(customers)} imágenes de cumpleaños")
+            
+            return images_sent > 0
+            
+        except Exception as e:
+            self.logger.error(f"❌ Error generando imágenes: {e}")
+            return False
+    
     def _send_notification(self, customers: List[Dict[str, Any]]) -> bool:
-        """Envía una notificación consolidada con todos los cumpleaños."""
+        """Envía una notificación consolidada con todos los cumpleaños y genera imágenes personalizadas."""
         try:
             if not customers:
                 return True
@@ -175,12 +243,18 @@ class BirthdayService(BaseService):
                 timeout=10
             )
 
+            text_sent = False
             if 200 <= response.status_code < 300:
-                self.logger.info(f"✅ Notificación enviada con {len(customers)} cumpleaños")
-                return True
+                self.logger.info(f"✅ Notificación de texto enviada con {len(customers)} cumpleaños")
+                text_sent = True
             else:
-                self.logger.warning(f"⚠️  Error enviando notificación: {response.status_code}")
-                return False
+                self.logger.warning(f"⚠️  Error enviando notificación de texto: {response.status_code}")
+            
+            # Generar y enviar imágenes personalizadas
+            images_sent = self._generate_and_send_images(customers)
+            
+            return text_sent or images_sent
+            
         except Exception as e:
             self.logger.error(f"❌ Error en notificación: {e}")
             return False

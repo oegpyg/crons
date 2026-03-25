@@ -2,9 +2,11 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Instalar dependencias del sistema
+# Instalar dependencias del sistema para Pillow y compilación
 RUN apt-get update && apt-get install -y \
     gcc \
+    libjpeg-dev \
+    zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Copiar requirements
