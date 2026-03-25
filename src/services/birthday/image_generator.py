@@ -69,8 +69,8 @@ class BirthdayImageGenerator:
             
             # Intentar cargar fuentes (fallback a la fuente por defecto si no existen)
             try:
-                message_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 48)
-                name_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 56)
+                message_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 144)
+                name_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 168)
             except:
                 # Fallback a fuente por defecto
                 logger.warning("No se pudieron cargar fuentes personalizadas, usando fuente por defecto")
@@ -92,16 +92,16 @@ class BirthdayImageGenerator:
             greeting = f"¡Feliz Cumpleaños {customer_name}!"
             
             # Dibujar mensaje profesional (arriba del nombre)
-            msg_y = int(height * 0.35)
+            msg_y = int(height * 0.15)
             for line in professional_message.split('\n'):
                 # Sombra
                 draw.text((text_x + 2, msg_y + 2), line, font=message_font, fill=shadow_color)
                 # Texto
                 draw.text((text_x, msg_y), line, font=message_font, fill=text_color)
-                msg_y += 60
+                msg_y += 180
             
             # Dibujar salto
-            msg_y += 20
+            msg_y += 60
             
             # Dibujar nombre con felicitación (grande, con sombra)
             draw.text((text_x + 2, msg_y + 2), greeting, font=name_font, fill=shadow_color)
