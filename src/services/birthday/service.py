@@ -266,10 +266,11 @@ class BirthdayService(BaseService):
             else:
                 self.logger.warning(f"⚠️  Error enviando notificación de texto: {response.status_code}")
             
-            # Generar y enviar imágenes personalizadas
-            images_sent = self._generate_and_send_images(customers)
+            # Generar y enviar imágenes personalizadas (COMENTADO POR AHORA)
+            # images_sent = self._generate_and_send_images(customers)
             
-            return text_sent or images_sent
+            # return text_sent or images_sent
+            return text_sent
             
         except Exception as e:
             self.logger.error(f"❌ Error en notificación: {e}")
