@@ -62,25 +62,20 @@ class BirthdayImageGenerator:
             base_image.paste(logo, (logo_x, logo_y), logo)
             
             # Preparar datos del cliente
-            customer_name = customer.get('Name', 'Cliente').upper()
-            birth_date = self._format_birthdate_spanish(customer.get('BirthDate'))
-            cobrador = customer.get('Cobrador', 'N/A')
-            phone = customer.get('Mobile', 'N/A')
+            customer_name = customer.get('Name', 'Cliente')
             
             # Crear objeto para dibujar
             draw = ImageDraw.Draw(base_image)
             
             # Intentar cargar fuentes (fallback a la fuente por defecto si no existen)
             try:
-                title_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 60)
-                text_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 28)
-                small_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 20)
+                message_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 48)
+                name_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 56)
             except:
                 # Fallback a fuente por defecto
                 logger.warning("No se pudieron cargar fuentes personalizadas, usando fuente por defecto")
-                title_font = ImageFont.load_default()
-                text_font = ImageFont.load_default()
-                small_font = ImageFont.load_default()
+                message_font = ImageFont.load_default()
+                name_font = ImageFont.load_default()
             
             # Colores
             text_color = (255, 255, 255)  # Blanco
@@ -90,25 +85,27 @@ class BirthdayImageGenerator:
             margin = 40
             text_x = margin
             
-            # Dibujar sombra del nombre (efecto drop shadow)
-            base_y = height // 2 - 80
-            draw.text((text_x + 2, base_y + 2), customer_name, font=title_font, fill=shadow_color)
-            draw.text((text_x, base_y), customer_name, font=title_font, fill=text_color)
+            # Mensaje profesional
+            professional_message = "En este día especial, te deseamos\nun hermoso cumpleaños lleno de\nalegrías y bendiciones."
             
-            # Datos adicionales
-            info_lines = [
-                f"📅 {birth_date}",
-                f"📱 {phone}",
-                f"👤 Cobrador: {cobrador}"
-            ]
+            # Mensaje de felicitación
+            greeting = f"¡Feliz Cumpleaños {customer_name}!"
             
-            info_y = base_y + 100
-            for line in info_lines:
+            # Dibujar mensaje profesional (arriba del nombre)
+            msg_y = int(height * 0.35)
+            for line in professional_message.split('\n'):
                 # Sombra
-                draw.text((text_x + 1, info_y + 1), line, font=text_font, fill=shadow_color)
+                draw.text((text_x + 2, msg_y + 2), line, font=message_font, fill=shadow_color)
                 # Texto
-                draw.text((text_x, info_y), line, font=text_font, fill=text_color)
-                info_y += 50
+                draw.text((text_x, msg_y), line, font=message_font, fill=text_color)
+                msg_y += 60
+            
+            # Dibujar salto
+            msg_y += 20
+            
+            # Dibujar nombre con felicitación (grande, con sombra)
+            draw.text((text_x + 2, msg_y + 2), greeting, font=name_font, fill=shadow_color)
+            draw.text((text_x, msg_y), greeting, font=name_font, fill=text_color)
             
             # Guardar imagen
             base_image.save(output_path, 'JPEG', quality=95)
