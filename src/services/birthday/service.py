@@ -141,35 +141,26 @@ class BirthdayService(BaseService):
             if not customers:
                 return True
             
-            # Construir mensaje en formato texto (Telegram no soporta tablas HTML)
+            # Construir mensaje con todos los cumpleaños
             message_lines = ["<b>🎂 ¡CUMPLEAÑOS DEL DÍA!</b>\n"]
-            message_lines.append("<pre>")
             
-            # Encabezados
-            header = f"{'Código':<10} {'Nombre':<30} {'Fecha':<20} {'Celular':<12} {'Cobrador':<15}"
-            message_lines.append(header)
-            message_lines.append("-" * len(header))
-            
-            # Filas
             for customer in customers:
                 birth_date = customer.get('BirthDate', '')
                 formatted_date = self._format_birthdate_spanish(birth_date)
                 cobrador = customer.get('Cobrador') or 'N/A'
                 
-                # Limitar longitudes para que quepa en monospace
-                codigo = str(customer['Code'])[:10]
-                nombre = str(customer['Name'])[:30]
-                fecha = formatted_date[:20]
-                celular = str(customer['Mobile'] or 'N/A')[:12]
-                cobrador_str = str(cobrador)[:15]
-                
-                row = f"{codigo:<10} {nombre:<30} {fecha:<20} {celular:<12} {cobrador_str:<15}"
-                message_lines.append(row)
+                customer_info = f"""<b>{customer['Name']}</b>
+<code>Código:</code> {customer['Code']}
+<code>Fecha de Cumpleaños:</code> {formatted_date}
+<code>Celular:</code> {customer['Mobile'] or 'N/A'}
+<code>Cobrador:</code> {cobrador}
+
+"""
+                message_lines.append(customer_info)
             
-            message_lines.append("</pre>")
-            message_lines.append(f"\n<b>Total: {len(customers)} cumpleaños</b>")
+            message_lines.append(f"<b>Total: {len(customers)} cumpleaños</b>")
             
-            message = "\n".join(message_lines)
+            message = "".join(message_lines)
 
             payload = {
                 "bot_id": int(self.config['bot_id']),
