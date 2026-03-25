@@ -61,52 +61,6 @@ class BirthdayImageGenerator:
             logo_y = 20
             base_image.paste(logo, (logo_x, logo_y), logo)
             
-            # Preparar datos del cliente
-            customer_name = customer.get('Name', 'Cliente')
-            
-            # Crear objeto para dibujar
-            draw = ImageDraw.Draw(base_image)
-            
-            # Intentar cargar fuentes (fallback a la fuente por defecto si no existen)
-            try:
-                message_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 144)
-                name_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 168)
-            except:
-                # Fallback a fuente por defecto
-                logger.warning("No se pudieron cargar fuentes personalizadas, usando fuente por defecto")
-                message_font = ImageFont.load_default()
-                name_font = ImageFont.load_default()
-            
-            # Colores
-            text_color = (255, 255, 255)  # Blanco
-            shadow_color = (0, 0, 0)  # Negro para sombra
-            
-            # Posiciones
-            margin = 40
-            text_x = margin
-            
-            # Mensaje profesional
-            professional_message = "En este día especial, te deseamos\nun hermoso cumpleaños lleno de\nalegrías y bendiciones."
-            
-            # Mensaje de felicitación
-            greeting = f"¡Feliz Cumpleaños {customer_name}!"
-            
-            # Dibujar mensaje profesional (arriba del nombre)
-            msg_y = int(height * 0.15)
-            for line in professional_message.split('\n'):
-                # Sombra
-                draw.text((text_x + 2, msg_y + 2), line, font=message_font, fill=shadow_color)
-                # Texto
-                draw.text((text_x, msg_y), line, font=message_font, fill=text_color)
-                msg_y += 180
-            
-            # Dibujar salto
-            msg_y += 60
-            
-            # Dibujar nombre con felicitación (grande, con sombra)
-            draw.text((text_x + 2, msg_y + 2), greeting, font=name_font, fill=shadow_color)
-            draw.text((text_x, msg_y), greeting, font=name_font, fill=text_color)
-            
             # Guardar imagen
             base_image.save(output_path, 'JPEG', quality=95)
             logger.info(f"✅ Imagen generada: {output_path}")
