@@ -141,35 +141,35 @@ class BirthdayService(BaseService):
             if not customers:
                 return True
             
-            # Construir tabla HTML
-            table_rows = ""
+            # Construir mensaje en formato texto (Telegram no soporta tablas HTML)
+            message_lines = ["<b>🎂 ¡CUMPLEAÑOS DEL DÍA!</b>\n"]
+            message_lines.append("<pre>")
+            
+            # Encabezados
+            header = f"{'Código':<10} {'Nombre':<30} {'Fecha':<20} {'Celular':<12} {'Cobrador':<15}"
+            message_lines.append(header)
+            message_lines.append("-" * len(header))
+            
+            # Filas
             for customer in customers:
                 birth_date = customer.get('BirthDate', '')
                 formatted_date = self._format_birthdate_spanish(birth_date)
-                cobrador = customer.get('Cobrador', 'N/A')
+                cobrador = customer.get('Cobrador') or 'N/A'
                 
-                table_rows += f"""<tr>
-  <td>{customer['Code']}</td>
-  <td>{customer['Name']}</td>
-  <td>{formatted_date}</td>
-  <td>{customer['Mobile'] or 'N/A'}</td>
-  <td>{cobrador}</td>
-</tr>"""
+                # Limitar longitudes para que quepa en monospace
+                codigo = str(customer['Code'])[:10]
+                nombre = str(customer['Name'])[:30]
+                fecha = formatted_date[:20]
+                celular = str(customer['Mobile'] or 'N/A')[:12]
+                cobrador_str = str(cobrador)[:15]
+                
+                row = f"{codigo:<10} {nombre:<30} {fecha:<20} {celular:<12} {cobrador_str:<15}"
+                message_lines.append(row)
             
-            message = f"""<b>🎂 ¡CUMPLEAÑOS DEL DÍA!</b>
-
-<table border="1" cellpadding="10" style="border-collapse: collapse;">
-<tr style="background-color: #f0f0f0; font-weight: bold;">
-  <th>Código</th>
-  <th>Nombre</th>
-  <th>Fecha Cumpleaños</th>
-  <th>Celular</th>
-  <th>Cobrador</th>
-</tr>
-{table_rows}
-</table>
-
-<b>Total: {len(customers)} cumpleaños</b>"""
+            message_lines.append("</pre>")
+            message_lines.append(f"\n<b>Total: {len(customers)} cumpleaños</b>")
+            
+            message = "\n".join(message_lines)
 
             payload = {
                 "bot_id": int(self.config['bot_id']),
