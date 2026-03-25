@@ -216,12 +216,28 @@ class BirthdayService(BaseService):
                 birth_date = customer.get('BirthDate', '')
                 formatted_date = self._format_birthdate_spanish(birth_date)
                 cobrador = customer.get('Cobrador') or 'N/A'
+                customer_mobile = customer.get('Mobile', '')
+                customer_name = customer.get('Name', '')
+                
+                # Crear link de WhatsApp si tiene celular
+                whatsapp_link = ""
+                if customer_mobile:
+                    # Limpiar número (solo dígitos)
+                    clean_phone = ''.join(filter(str.isdigit, customer_mobile))
+                    # Agregar código de país si no lo tiene (Paraguay = 595)
+                    if not clean_phone.startswith('595'):
+                        clean_phone = '595' + clean_phone
+                    
+                    message_wa = f"Feliz cumpleaños {customer_name}! 🎂"
+                    # Encodificar el mensaje para URL
+                    message_wa_encoded = requests.utils.quote(message_wa)
+                    whatsapp_link = f'\n<a href="https://wa.me/{clean_phone}?text={message_wa_encoded}">📱 Enviar WhatsApp</a>'
                 
                 customer_info = f"""<b>{customer['Name']}</b>
 <code>Código:</code> {customer['Code']}
 <code>Fecha de Cumpleaños:</code> {formatted_date}
 <code>Celular:</code> {customer['Mobile'] or 'N/A'}
-<code>Cobrador:</code> {cobrador}
+<code>Cobrador:</code> {cobrador}{whatsapp_link}
 
 """
                 message_lines.append(customer_info)
